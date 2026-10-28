@@ -1,0 +1,8 @@
+README.md
+assets/girl.glb
+css/style.css
+index.html
+js/game.js
+js/glbchar.js
+js/scenes.js
+js/world.js

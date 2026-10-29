@@ -81,7 +81,7 @@ function randomSpot(sc) { for (let k = 0; k < 40; k++) { const r = sc.npcRect, x
 
 function populate() {
   const sc = G.scene; G.npcs = [];
-  const n = G.sceneId === 'plaza' ? G.crowd : G.sceneId === 'ktv' ? 9 : 4;
+  const n = (G.sceneId === 'plaza' || G.sceneId === 'bukit') ? G.crowd : G.sceneId === 'ktv' ? 9 : 4;
   const used = new Set();
   for (let i = 0; i < n; i++) {
     let [x, z] = randomSpot(sc); let nm; do { nm = pick(NAMES); } while (used.has(nm) && used.size < NAMES.length); used.add(nm);
@@ -92,19 +92,35 @@ function populate() {
 
 /* ---------------- scene switching ---------------- */
 function getScene(id) {
-  if (!G.scenes[id]) G.scenes[id] = id === 'plaza' ? Scenes.makePlaza(G.R, G.T) : id === 'ktv' ? Scenes.makeKTV(G.R, G.T) : Scenes.makeBoutique(G.R, G.T);
+  if (!G.scenes[id]) G.scenes[id] = id === 'bukit' ? Scenes.makeBukit(G.R, G.T) : id === 'beach' ? Scenes.makeBeach(G.R, G.T) : id === 'plaza' ? Scenes.makePlaza(G.R, G.T) : id === 'ktv' ? Scenes.makeKTV(G.R, G.T) : Scenes.makeBoutique(G.R, G.T);
   return G.scenes[id];
 }
 function enterScene(id, spawn) {
   G.scene = getScene(id); G.sceneId = id; G.target = null;
   const s = spawn || G.scene.spawn; G.me.x = s[0]; G.me.z = s[1]; G.me.y = G.scene.heightAt(s[0], s[1]); G.me.vx = G.me.vz = 0;
-  G.me.yaw = 0; G.cam.pitch = G.scene.camera.pitch; G.cam.dist = G.scene.camera.dist; G.cam.fov = G.scene.camera.fov; G.cam.target = [s[0], 0, s[1] - (G.scene.camera.lead == null ? 2 : G.scene.camera.lead)];
+  G.me.yaw = 0; applyView(); G.cam.target = [s[0], 0, s[1] - (G.scene.camera.lead == null ? 2 : G.scene.camera.lead)];
   G.me.singing = false; G.ktv = { queue: [], cur: null, t: 0, nextAdd: 5 };
-  G.near = null; $('enterBtn').hidden = true;
+  G.near = null; setEnter(null);
   populate(); spawnCoins(); $('banner').hidden = true; $('sceneName').textContent = G.scene.name; closePanels();
   addMsg('world', '', '— 你来到了「' + G.scene.name + '」—', false, true);
   if (id === 'ktv') for (let i = 0; i < 2; i++) ktvEnqueueNpc();
 }
+/* camera: wide view toggle (scenes may define camera.wide via cameraWide) */
+function applyView() { const c = (G.wide && G.scene.cameraWide) || G.scene.camera; G.cam.pitch = c.pitch; G.cam.dist = c.dist; G.cam.fov = c.fov; const b = $('viewBtn'); if (b) b.textContent = '📷 视角：' + (G.wide ? '广角' : '原版'); }
+
+/* interaction button (lives in the action grid): grey + disabled unless a portal / hotspot is in range */
+const PORTAL_UI = { boutique: ['👗', '试衣间'], ktv: ['🎤', 'K歌厅'], beach: ['🏖️', '海滩'], bukit: ['🌃', '武吉免登'], pavilion: ['🛍️', '商场'], plaza: ['🚪', '离开'] };
+function setEnter(best) {
+  const b = $('enterBtn'), tx = $('enterText'), ic = $('enterIcon'); if (!b) return;
+  b.disabled = !best;
+  if (!best) { tx.textContent = '互动'; ic.textContent = '🚪'; return; }
+  const isPortal = G.scene.portals.includes(best);
+  if (best.id === 'songs') { tx.textContent = '点歌'; ic.textContent = '🎵'; }
+  else if (best.id === 'wardrobe') { tx.textContent = '试衣镜'; ic.textContent = '👗'; }
+  else if (isPortal) { const u = PORTAL_UI[best.id] || ['🚪', '进入']; ic.textContent = u[0]; tx.textContent = (best.id === 'plaza' ? '' : '去 ') + u[1]; if (best.id === 'plaza') tx.textContent = '离开'; }
+  else { tx.textContent = best.label || '互动'; ic.textContent = typeof best.icon === 'string' ? best.icon : '✨'; }
+}
+
 function goTo(id, spawn) {
   if (G.transitioning) return; G.transitioning = true; $('fade').classList.add('on');
   setTimeout(() => { enterScene(id, spawn); setTimeout(() => { $('fade').classList.remove('on'); G.transitioning = false; }, 120); }, 300);
@@ -179,8 +195,7 @@ function npcChat(dt) {
 
 /* ---------------- coins (plaza) ---------------- */
 function spawnCoins() {
-  G.coins = []; if (G.sceneId !== 'plaza') return; const sc = G.scene;
-  for (let i = 0; i < 14; i++) { const [x, z] = randomSpot(sc); G.coins.push({ x, z, ph: rand(0, 6) }); }
+  G.coins = []; /* ground coins removed: coins now come from KTV, beach activities, wishes, etc. */
 }
 
 /* ---------------- update ---------------- */
@@ -221,7 +236,7 @@ function update(dt) {
   npcChat(dt);
   // interactions (portals / hotspots)
   let best = null, bd = 1e9; for (const p of [...sc.portals, ...sc.hotspots]) { const d = Math.hypot(me.x - p.x, me.z - p.z); if (d < p.r && d < bd) { bd = d; best = p; } }
-  if (best !== G.near) { G.near = best; const b = $('enterBtn'); b.hidden = !best; if (best) { $('enterText').textContent = best.id === 'songs' ? '点歌' : best.id === 'wardrobe' ? '试衣镜' : best.id === 'plaza' ? '离开' : '进入 ' + best.label; $('enterIcon').textContent = best.id === 'songs' ? '🎵' : best.id === 'wardrobe' ? '👗' : '🚪'; } }
+  if (best !== G.near) { G.near = best; setEnter(best); }
   // camera follow
   const cc = sc.camera, tx = clamp(me.x, cc.clampX[0], cc.clampX[1]), tz = clamp(me.z - (cc.lead == null ? 2 : cc.lead), cc.clampZ[0], cc.clampZ[1]), a = 1 - Math.exp(-dt * 5);
   G.cam.target[0] += (tx - G.cam.target[0]) * a; G.cam.target[2] += (tz - G.cam.target[2]) * a;
@@ -342,20 +357,39 @@ function bindInput() {
   $('tabs').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; G.tab = b.dataset.ch; [...$('tabs').children].forEach(x => x.classList.toggle('on', x === b)); renderLog(); });
   $('chatForm').addEventListener('submit', e => { e.preventDefault(); sendChat($('chatIn').value); $('chatIn').value = ''; });
   $('chatIn').addEventListener('keydown', e => e.stopPropagation());
+  $('viewBtn').onclick = () => { G.wide = !G.wide; applyView(); };
   document.querySelectorAll('[data-close]').forEach(b => b.onclick = closePanels);
   $('timeChip').onclick = () => { const order = ['auto', 'day', 'dusk', 'night'], i = (order.indexOf(G.timeMode) + 1) % 4; G.timeMode = order[i]; if (G.timeMode === 'day') G.hour = 12.5; if (G.timeMode === 'dusk') G.hour = 18.4; if (G.timeMode === 'night') G.hour = 22; updateClock(); };
   $('serverBtn').onclick = () => toast('服务器：目前是本地演示，联网版之后再做');
   $('gear').onclick = () => { $('setPanel').hidden = false; syncSeg(); };
   const seg = (id, key, fn) => $(id).addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; fn(parseFloat(b.dataset.v)); syncSeg(); });
-  seg('segCrowd', 'crowd', v => { G.crowd = v; store.set('crowd', v); if (G.sceneId === 'plaza') populate(); });
+  seg('segCrowd', 'crowd', v => { G.crowd = v; store.set('crowd', v); if (G.sceneId === 'plaza' || G.sceneId === 'bukit') populate(); });
   seg('segQ', 'q', v => { G.quality = v; store.set('q', v); });
   seg('segOl', 'ol', v => { G.outline = v; store.set('ol', v); });
   addEventListener('contextmenu', e => e.preventDefault());
 }
 function syncSeg() { [['segCrowd', G.crowd], ['segQ', G.quality], ['segOl', G.outline]].forEach(([id, v]) => [...$(id).children].forEach(b => b.classList.toggle('on', parseFloat(b.dataset.v) === v))); }
+function pay(c, ok, msg) { if (G.coinCount < c) { toast('金币不够啦（需要 ' + c + '）'); return false; } setCoins(G.coinCount - c); toast(ok, 2400); if (msg) setBubble(G.me, msg); return true; }
+/* Bukit Bintang hotspots (the beach scene handles its own hotspots in scene_beach.js) */
+function hotAct(n) {
+  switch (n.id) {
+    case 'teh': pay(15, '🥤 拉茶一杯！-15 金币，拉得真高～', '好喝！'); break;
+    case 'satay': pay(20, '🍢 沙爹 10 串，花生酱超香！-20 金币', '沙爹赞！'); break;
+    case 'durian': pay(30, '🍈 猫山王榴莲！好臭但好吃 -30 金币', '榴莲万岁'); break;
+    case 'roti': pay(12, '🥞 印度煎饼配咖喱 -12 金币', '好烫！'); break;
+    case 'fountain': if (pay(10, '⛲ 你投了一枚硬币，默默许了愿…', '许愿～')) { if (Math.random() < .3) setTimeout(() => { setCoins(G.coinCount + 50); toast('✨ 愿望成真！+50 金币', 2400); }, 1200); } break;
+    case 'photo': G.me.pose = 3; G.me.yaw = 0; setBubble(G.me, '✌ KL！'); $('fade').classList.add('on'); setTimeout(() => $('fade').classList.remove('on'), 140); toast('📸 咔嚓！已保存到相册（演示）', 2400); break;
+    case 'busker': if (pay(5, '🎸 你给艺人打赏了 5 金币，他为你弹了一曲', '♪')) { G.me.pose = 3; } break;
+    case 'pavilion': toast('🛍 Pavilion 商场室内：下一个场景，开发中', 2600); break;
+    default: return false;
+  }
+  return true;
+}
 function interact() {
   const n = G.near; if (!n || G.transitioning) return;
-  if (n.id === 'songs') openSongs(); else if (n.id === 'wardrobe') openWardrobe(); else if (n.id === 'plaza') goTo('plaza', n.spawn); else goTo(n.id === 'ktv' ? 'ktv' : 'boutique', null);
+  if (G.sceneId === 'bukit' && hotAct(n)) return;
+  if (n.id === 'songs') openSongs(); else if (n.id === 'wardrobe') openWardrobe();
+  else if (G.scene.portals.includes(n)) goTo(n.id, n.spawn || null);
 }
 
 /* ---------------- avatar portrait ---------------- */

@@ -214,6 +214,19 @@ function makePlaza(R, T) {
     const gl = new MB(); pool(gl, dc, -11.8, 6.5, [1, .3, .75]); halo(gl, dc, 2.4, zf + 1.6, 6, [1, .4, .8]); add(gl, { tex: T.glow, mode: 2, glow: e => .06 + e.night * .65 });
     S.portals.push({ id: 'ktv', x: dc, z: -12.6, r: 1.9, label: 'STAR KTV · 大堂', color: [1, .4, .8] }); }
 
+
+  /* PORTAL GATES: Star Beach (left) and Bukit Bintang (right) */
+  { const gate = (id, gx, gz, text, hexc, col, label, w) => {
+      const gl = new MB(), pst = new MB(), sg = T.sign(text, { w: 1024, h: 230, fs: w, bg: '#0d1030', fg: '#ffffff', border: hexc }), sb = new MB();
+      pst.box(gx - 2.5, 0, gz - .3, gx - 1.9, 4.4, gz + .3, [1, 1, 1]); pst.box(gx + 1.9, 0, gz - .3, gx + 2.5, 4.4, gz + .3, [1, 1, 1]); pst.box(gx - 2.5, 4.0, gz - .3, gx + 2.5, 4.4, gz + .3, [1, 1, 1]);
+      add(pst, M.emSolid(hexc, .8, 1.5));
+      sb.box(gx - 2.5, 4.6, gz - .15, gx + 2.5, 5.7, gz + .15, [1, 1, 1], [5, 1.1], { noBack: true, noSides: true, noTop: true }); add(sb, { tex: sg.tex, em: sg.em, emDay: .6, emNight: 1.8 });
+      pool(gl, gx, gz, 5.2, col); halo(gl, gx, 2.4, gz + .4, 5.6, col); add(gl, { tex: T.glow, mode: 2, glow: e => .18 + e.night * .6 });
+      obs(gx - 2.55, gz - .35, gx - 1.85, gz + .35); obs(gx + 1.85, gz - .35, gx + 2.55, gz + .35);
+      S.portals.push({ id, x: gx, z: gz, r: 2.0, label, color: col }); };
+    gate('beach', -19.5, -5, 'STAR BEACH 星光海滩', '#5fe3ff', [.35, .9, 1], '星光海滩', 96);
+    gate('bukit', 19.5, -5, 'BUKIT BINTANG 武吉免登', '#ffc24a', [1, .76, .3], '武吉免登', 84); }
+
   /* cafe between them */
   { const x0 = -5, x1 = 3.4, zf = -13.4, h = 5.2, f = FA(9, { wall: '#e3c9a6', glass: ['#ffd9a0', '#c9904a'], cols: 3, rows: 2, lit: .9, warm: ['#ffd98a', '#ffe8b0'] });
     const mb = new MB(); mb.box(x0, 0, zf - 8, x1, h, zf, [1, 1, 1], [8.4, 5.2], { noTop: true }); add(mb, { tex: f.tex, em: f.em, emNight: 1.6 });
@@ -327,7 +340,7 @@ function makeBoutique(R, T) {
     S.hotspots.push({ id: 'wardrobe', x: 0, z: Z0 + 3.2, r: 2.2, label: '试衣镜', color: [1, .6, .85] }); }
   // racks
   { const mb = new MB(); const rack = (x0, z0, x1, z1) => { mb.box(x0, 0, z0, x1, 1.9, z1, [1, 1, 1], [x1 - x0 || 1, 1.9], { noTop: false }); obs(x0, z0, x1, z1); };
-    [[-10, -7, -6, -6.3], [6, -7, 10, -6.3], [-10, 0, -6, .7], [6, 0, 10, .7], [-10, 6, -6, 6.7], [6, 6, 10, 6.7]].forEach(r => rack(...r)); add(mb, { tex: T.rack }); }
+    [[-10, -7, -6, -6.3], [6, -7, 10, -6.3], [-10, 0, -6, .7], [6, 0, 10, .7], [-8.4, 6, -4.4, 6.7], [6, 6, 10, 6.7]].forEach(r => rack(...r)); add(mb, { tex: T.rack }); }
   { const mb = new MB(); mb.box(-3, 0, 5.5, 3, 1.1, 7, [.9, .6, .75]); mb.box(-3, 1.1, 5.5, 3, 1.2, 7, [1, 1, 1]); obs(-3, 5.5, 3, 7); add(mb, {}); }
   { const gl = new MB(); [[-8, -2, [1, .7, .9]], [8, -2, [1, .85, .6]], [0, 2, [1, 1, 1]]].forEach(([x, z, c]) => pool(gl, x, z, 4.5, c, .03)); add(gl, { tex: T.glow, mode: 2, glow: .35 }); }
   // exit

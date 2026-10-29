@@ -28,6 +28,7 @@
   </div>
 
   <div id="sceneName"></div>
+  <button id="viewBtn">📷 视角：原版</button>
   <div id="banner" hidden></div>
 
   <div id="joy"><div id="knob"></div></div>
@@ -41,13 +42,12 @@
   <div id="actions">
     <button data-act="chorus"><span>🎤</span>合唱</button>
     <button data-act="friends"><span>👥</span>好友</button>
-    <button data-act="chat"><span>💬</span>聊天</button>
+    <button id="enterBtn" disabled><span id="enterIcon">🚪</span><span id="enterText">互动</span></button>
     <button data-act="gift"><span>🎁</span>礼物</button>
     <button data-act="pose"><span>🕺</span>姿势</button>
     <button data-act="wardrobe"><span>👗</span>换装</button>
   </div>
 
-  <button id="enterBtn" hidden><span id="enterIcon">🚪</span><span id="enterText">进入</span></button>
   <div id="toast"></div>
 </div>
 
@@ -85,6 +85,8 @@
 <script src="js/glbchar.js"></script>
 <script src="js/world.js"></script>
 <script src="js/scenes.js"></script>
+<script src="js/scene-bukit-bintang.js"></script>
+<script src="js/scene_beach.js"></script>
 <script src="js/game.js"></script>
 </body>
 </html>

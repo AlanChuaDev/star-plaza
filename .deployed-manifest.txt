@@ -4,5 +4,7 @@ css/style.css
 index.html
 js/game.js
 js/glbchar.js
+js/scene-bukit-bintang.js
+js/scene_beach.js
 js/scenes.js
 js/world.js
